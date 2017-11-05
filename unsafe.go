@@ -3,7 +3,6 @@
 package fasttemplate
 
 import (
-	"reflect"
 	"unsafe"
 )
 
@@ -12,11 +11,7 @@ func unsafeBytes2String(b []byte) string {
 }
 
 func unsafeString2Bytes(s string) []byte {
-	sh := (*reflect.StringHeader)(unsafe.Pointer(&s))
-	bh := reflect.SliceHeader{
-		Data: sh.Data,
-		Len:  sh.Len,
-		Cap:  sh.Len,
-	}
-	return *(*[]byte)(unsafe.Pointer(&bh))
+	temporaryData := (*[2]uintptr)(unsafe.Pointer(&s))
+	bytesData := [3]uintptr{temporaryData[0], temporaryData[1], temporaryData[1]}
+	return *(*[]byte)(unsafe.Pointer(&bytesData))
 }

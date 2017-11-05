@@ -119,9 +119,9 @@ type Template struct {
 	startTag string
 	endTag   string
 
-	texts          [][]byte
-	tags           []string
-	byteBufferPool bytebufferpool.Pool
+	texts           [][]byte
+	Tags            []string
+	bytesBufferPool sync.Pool
 }
 
 // New parses the given template using the given startTag and endTag
@@ -175,7 +175,7 @@ func (t *Template) Reset(template, startTag, endTag string) error {
 	t.startTag = startTag
 	t.endTag = endTag
 	t.texts = t.texts[:0]
-	t.tags = t.tags[:0]
+	t.Tags = t.Tags[:0]
 
 	if len(startTag) == 0 {
 		panic("startTag cannot be empty")
@@ -196,8 +196,8 @@ func (t *Template) Reset(template, startTag, endTag string) error {
 	if tagsCount+1 > cap(t.texts) {
 		t.texts = make([][]byte, 0, tagsCount+1)
 	}
-	if tagsCount > cap(t.tags) {
-		t.tags = make([]string, 0, tagsCount)
+	if tagsCount > cap(t.Tags) {
+		t.Tags = make([]string, 0, tagsCount)
 	}
 
 	for {
@@ -214,7 +214,7 @@ func (t *Template) Reset(template, startTag, endTag string) error {
 			return fmt.Errorf("Cannot find end tag=%q in the template=%q starting from %q", endTag, template, s)
 		}
 
-		t.tags = append(t.tags, unsafeBytes2String(s[:n]))
+		t.Tags = append(t.Tags, unsafeBytes2String(s[:n]))
 		s = s[n+len(b):]
 	}
 
@@ -243,7 +243,7 @@ func (t *Template) ExecuteFunc(w io.Writer, f TagFunc) (int64, error) {
 			return nn, err
 		}
 
-		ni, err = f(w, t.tags[i])
+		ni, err = f(w, t.Tags[i])
 		nn += int64(ni)
 		if err != nil {
 			return nn, err
@@ -279,9 +279,9 @@ func (t *Template) ExecuteFuncString(f TagFunc) string {
 	if _, err := t.ExecuteFunc(bb, f); err != nil {
 		panic(fmt.Sprintf("unexpected error: %s", err))
 	}
-	s := string(bb.Bytes())
-	bb.Reset()
-	t.byteBufferPool.Put(bb)
+	s := unsafeBytes2String(w.Bytes())
+	w.Reset()
+	t.bytesBufferPool.Put(w)
 	return s
 }
 
