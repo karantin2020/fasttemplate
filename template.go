@@ -119,9 +119,9 @@ type Template struct {
 	startTag string
 	endTag   string
 
-	texts           [][]byte
-	Tags            []string
-	bytesBufferPool sync.Pool
+	texts          [][]byte
+	Tags           []string
+	byteBufferPool bytebufferpool.Pool
 }
 
 // New parses the given template using the given startTag and endTag
@@ -279,9 +279,9 @@ func (t *Template) ExecuteFuncString(f TagFunc) string {
 	if _, err := t.ExecuteFunc(bb, f); err != nil {
 		panic(fmt.Sprintf("unexpected error: %s", err))
 	}
-	s := unsafeBytes2String(w.Bytes())
-	w.Reset()
-	t.bytesBufferPool.Put(w)
+	s := unsafeBytes2String(bb.Bytes())
+	bb.Reset()
+	t.byteBufferPool.Put(bb)
 	return s
 }
 

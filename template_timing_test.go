@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 	"text/template"
+	"unsafe"
 )
 
 var (
@@ -26,6 +27,15 @@ var (
 		"uid":     []byte("aaasdf"),
 		"subid":   []byte("asdfds"),
 		"ref":     []byte("http://google.com/aaa/bbb/ccc"),
+	}
+	ml = [][]byte{
+		[]byte("1234"),
+		[]byte("1232"),
+		[]byte("123"),
+		[]byte("123123"),
+		[]byte("aaasdf"),
+		[]byte("asdfds"),
+		[]byte("http://google.com/aaa/bbb/ccc"),
 	}
 )
 
@@ -262,5 +272,27 @@ func BenchmarkExecuteFunc(b *testing.B) {
 }
 
 func testTagFunc(w io.Writer, tag string) (int, error) {
-	return w.Write(m[tag].([]byte))
+	switch tag {
+	case "cb":
+		return w.Write(Str2Bytes("1234"))
+	case "width":
+		return w.Write(Str2Bytes("1232"))
+	case "height":
+		return w.Write(Str2Bytes("123"))
+	case "timeout":
+		return w.Write(Str2Bytes("123123"))
+	case "uid":
+		return w.Write(Str2Bytes("aaasdf"))
+	case "subid":
+		return w.Write(Str2Bytes("asdfds"))
+	case "ref":
+		return w.Write(Str2Bytes("http://google.com/aaa/bbb/ccc"))
+	}
+	return 0, nil
+}
+
+func Str2Bytes(stringData string) []byte {
+	temporaryData := (*[2]uintptr)(unsafe.Pointer(&stringData))
+	bytesData := [3]uintptr{temporaryData[0], temporaryData[1], temporaryData[1]}
+	return *(*[]byte)(unsafe.Pointer(&bytesData))
 }
